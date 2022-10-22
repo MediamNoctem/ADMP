@@ -21,3 +21,6 @@ int main(int argc, char** argv)
 	waitKey(0);
     return 0;
 } 
+
+// g++ show_image.cpp -o show_image `pkg-config --cflags --libs opencv4`
+// ./show_image
