@@ -4,7 +4,7 @@ import cv2
 
 
 def view_image(path):
-    img = cv2.imread(path, 1)
+    img = cv2.imread(path, 0)
     cv2.namedWindow('Display window', cv2.WINDOW_FREERATIO)
     cv2.imshow('Display window', img)
     cv2.waitKey(0)
@@ -116,6 +116,16 @@ def gaussian_blur(size_conv_matrix, sigma, a, b, path):
     cv2.destroyAllWindows()
 
 
+def method_Canny(path):
+    # 1
+    img = cv2.imread(path, 0)
+    img_blur = cv2.blur(img, (5, 5))
+    cv2.namedWindow('Display window', cv2.WINDOW_FREERATIO)
+    cv2.imshow('Display window', img_blur)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
 if __name__ == '__main__':
     # lab1
 
@@ -139,17 +149,16 @@ if __name__ == '__main__':
     """
 
     # lab2
-
-    # lab2
-    # view_image(r'C:\\Users\\romAn\\image\\husky.jpg')
+    """# view_image(r'C:\\Users\\romAn\\image\\husky.jpg')
     conv_matrix_size = 21
     sigma = 0.3 * ((conv_matrix_size - 1) * 0.5 - 1) + 0.8
     gaussian_blur(conv_matrix_size, sigma, (conv_matrix_size - 1) // 2, (conv_matrix_size - 1) // 2, r'C:\\Users\\romAn\\image\\husky.jpg')
-    """img = cv2.imread(r'C:\\Users\\romAn\\image\\husky.jpg', 0)
-                img_blur = cv2.blur(img, (20, 20))
-                cv2.namedWindow("Blur")
-                cv2.imshow("Blur", img_blur)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
+    # img = cv2.imread(r'C:\\Users\\romAn\\image\\husky.jpg', 0)
+    # img_blur = cv2.blur(img, (20, 20))
+    # cv2.namedWindow("Blur")
+    # cv2.imshow("Blur", img_blur)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
     """
-    
+    # lab3
+    method_Canny("husky.jpg")
