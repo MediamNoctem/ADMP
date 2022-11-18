@@ -6,8 +6,32 @@
 using namespace cv;
 using namespace std;
 
+Point* findRedObject(Mat img) {
+    int h = img.rows;
+    int w = img.cols;
+    int x0 = h;
+    int y0 = -1;
+    int x1 = 0;
+    int y1 = 0; 
+
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++) {
+            if ((int)img.at<uchar>(y,x) == 255) {
+                if (y0 < 0) y0 = y;
+                if (x0 > x) x0 = x;
+                if (y1 < y) y1 = y;
+                if (x1 < x) x1 = x;
+            }
+        }
+
+    Point* p = new Point[2];
+    p[0] = Point(x0, y0);
+    p[1] = Point(x1, y1);
+    return p;
+}
+
 int main(int argc, char** argv) {
-    VideoCapture cap("http://192.168.243.173:8080/video/mjpeg");
+    VideoCapture cap(0);
 
     if (!cap.isOpened())
     {
@@ -24,11 +48,8 @@ int main(int argc, char** argv) {
     int iLowV = 60;
     int iHighV = 255;
 
-    int iLastX = -1; 
-    int iLastY = -1;
-
-    Mat imgTmp;
-    cap.read(imgTmp); 
+    // Mat imgOriginal;
+    // imgOriginal = imread("rose.jpg", 1);
 
     time_t start,end;
     time (&start);
@@ -43,33 +64,15 @@ int main(int argc, char** argv) {
             break;
         }
         Mat imgHSV;
-
         cvtColor(imgOriginal, imgHSV, COLOR_BGR2HSV);
 
         Mat imgThresholded;
         inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded);
 
-        vector<vector<Point>> contours;
-        vector<Vec4i> hierarchy;
-        findContours(imgThresholded, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE);
+        Point* p = findRedObject(imgThresholded);
 
-        //drawContours(imgThresholded, contours[0], -1, (255, 0, 255), 3);
+        rectangle(imgOriginal, p[0], p[1], Scalar(0,1,1), -1);
 
-        Moments oMoments = moments(imgThresholded);
-        double dM01 = oMoments.m01;
-        double dM10 = oMoments.m10;
-        double dArea = oMoments.m00;
-
-        if (dArea > 10000) {
-            int posX = dM10 / dArea;
-            int posY = dM01 / dArea; 
-
-            if (iLastX >= 0 && iLastY >= 0 && posX >= 0 && posY >= 0)
-                rectangle(imgOriginal, Point(posX, posY), Point(iLastX, iLastY), Scalar(0,1,1), -1);
-            
-            iLastX = posX;
-            iLastY = posY;
-        }
         imshow("Thresholded Image", imgThresholded);
         imshow("Original", imgOriginal);
         if (waitKey(30) == 27) {
