@@ -42,10 +42,10 @@ int main(int argc, char** argv) {
     int iLowH = 170;
     int iHighH = 179;
 
-    int iLowS = 150; 
+    int iLowS = 200; 
     int iHighS = 255;
 
-    int iLowV = 60;
+    int iLowV = 100;
     int iHighV = 255;
 
     // Mat imgOriginal;
