@@ -179,7 +179,7 @@ def non_maximum_suppression(grad_lenght, grad_angle, img):
                     for h in range(0, 8):
                         for g in range(0, 8):
                             if h != 4 and g != 4 and img[i - 4 + h][j - 4 + g] == 255:
-                                img[i][j] == 255
+                                img[i][j] = 255
     return img
 
 
@@ -218,7 +218,7 @@ def method_Canny(path):
             grad_lenght[i][j] = grad_lenght_temp
             grad_angle[i][j] = fi
             max_grad_lenght = max(max_grad_lenght, grad_lenght_temp)
-            
+
     img = non_maximum_suppression(grad_lenght, grad_angle, img)
     img = double_filtration(max_grad_lenght, grad_lenght, img)
 
