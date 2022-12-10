@@ -165,7 +165,7 @@ def non_maximum_suppression(grad_lenght, grad_angle, img):
     return img
 
 
-    def double_filtration(max_grad_lenght, grad_lenght, img):
+def double_filtration(max_grad_lenght, grad_lenght, img):
     low_level = max_grad_lenght // 15
     high_level = max_grad_lenght // 10
 
@@ -181,6 +181,12 @@ def non_maximum_suppression(grad_lenght, grad_angle, img):
                             if h != 4 and g != 4 and img[i - 4 + h][j - 4 + g] == 255:
                                 img[i][j] = 255
     return img
+
+
+def sobel():
+    gx = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]
+    gy = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]]
+    return gx, gy
 
 
 def method_Canny(path):
