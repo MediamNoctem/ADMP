@@ -117,9 +117,47 @@ def gaussian_blur(size_conv_matrix, sigma, a, b, path):
 
 
 def method_Canny(path):
-    # 1
+    def method_Canny(path):
     img = cv2.imread(path, 0)
     img_blur = cv2.blur(img, (5, 5))
+    height = img.shape[0]
+    width = img.shape[1]
+
+    grad_lenght = [[0 for _ in range(width)] for _ in range(height)]
+    grad_angle = [[0 for _ in range(width)] for _ in range(height)]
+
+    gx, gy = sobel()
+    len_gx = len(gx)
+    len_gy = len(gy)
+
+    for i in range(len_gx // 2, height - len_gx % 2):
+        for j in range(len_gx // 2, width - len_gx % 2):
+            sum_gx = 0
+            sum_gy = 0
+
+            for h in range(len_gx):
+                for g in range(len_gx):
+                    sum_gx += gx[h][g] * img_blur[h - len_gx // 2 + i][g - len_gx // 2 + j]
+                    sum_gy += gy[h][g] * img_blur[h - len_gy // 2 + i][g - len_gy // 2 + j]
+
+            grad_lenght_temp = math.sqrt(sum_gx ** 2 + sum_gy ** 2)
+
+            if sum_gx == 0:
+                sum_gx = 0.0000001
+
+            fi = round_angle(sum_gx, sum_gy)
+
+            grad_lenght[i][j] = grad_lenght_temp
+            grad_angle[i][j] = fi
+
+    print("Матрица значений длин градиентов всех пикселей:")
+    for i in range(len(grad_lenght)):
+        print(grad_lenght[i])
+
+    print("Матрица значений углов градиентов всех пикселей:")
+    for i in range(len(grad_angle)):
+        print(grad_angle[i])
+
     cv2.namedWindow('Display window', cv2.WINDOW_FREERATIO)
     cv2.imshow('Display window', img_blur)
     cv2.waitKey(0)
