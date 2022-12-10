@@ -16,14 +16,13 @@ int main(int argc, char **argv)
 
 	KCFTracker tracker(HOG, FIXEDWINDOW, MULTISCALE, LAB);
 
-	VideoCapture video(0);
-     
-    if(!video.isOpened())
-    {
-        cout << "Could not read video file" << endl; 
-        return 1; 
-    } 
- 
+	VideoCapture video("video2_2.mp4");
+
+    if(!video.isOpened()) {
+        cout << "Could not read video file" << endl;
+        return -1;
+    }
+
     Mat frame; 
     bool ok = video.read(frame); 
     Rect trackingBox = selectROI(frame, false); 
@@ -32,8 +31,13 @@ int main(int argc, char **argv)
     imshow("Tracking", frame); 
 	tracker.init( trackingBox, frame );
 
-	while(video.read(frame))
+	while(true)
     {     
+        video >> frame;
+
+        if (frame.empty())
+            break;
+
         double timer = (double)getTickCount();
 		Rect result = tracker.update(frame);
         bool ok = !result.empty();
@@ -54,6 +58,9 @@ int main(int argc, char **argv)
         if(waitKey(1) == 27) {
             break;
         }
-    }
+    } 
+    video.release();
+    destroyAllWindows();
+    
     return 0;
 }

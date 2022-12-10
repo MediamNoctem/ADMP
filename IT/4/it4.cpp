@@ -11,7 +11,7 @@ int main(int argc, char **argv)
 {
     // List of tracker types in OpenCV 3.4.1
     // "GOTURN"
-    string trackerTypes[8] = {"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "MOSSE", "CSRT"};
+    string trackerTypes[7] = {"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "MOSSE", "CSRT"};
     string trackerType = trackerTypes[2];
     Ptr<Tracker> tracker;
  
@@ -32,7 +32,11 @@ int main(int argc, char **argv)
     /*if (trackerType == "GOTURN")
         tracker = TrackerGOTURN::create();*/
     
-    VideoCapture video(0);
+    VideoCapture video("video2_2.mp4");
+    VideoWriter writer;
+    int codec = VideoWriter::fourcc('M', 'J', 'P', 'G');
+    double fps = 120.0;
+    string filename = "./video2_2.avi";
      
     if(!video.isOpened())
     {
@@ -41,15 +45,29 @@ int main(int argc, char **argv)
     } 
  
     Mat frame; 
+    Mat frame2;
+
     bool ok = video.read(frame); 
     Rect trackingBox = selectROI(frame, false); 
     rectangle(frame, trackingBox, Scalar( 0, 255, 0 ), 2, 1 ); 
+
+    writer.open(filename, codec, fps, frame.size());
+
+    if (!writer.isOpened()) {
+        cout << "Could not open the output video file for write\n";
+        return -1;
+    }
  
     imshow("Tracking", frame); 
     tracker->init(frame, trackingBox);
      
-    while(video.read(frame))
+    while(true)
     {     
+        video >> frame;
+
+        if (frame.empty())
+            break;
+
         double timer = (double)getTickCount();
         bool ok = tracker->update(frame, trackingBox);
         float fps = getTickFrequency() / ((double)getTickCount() - timer);
@@ -64,11 +82,15 @@ int main(int argc, char **argv)
         putText(frame, trackerType + " Tracker", Point(100,20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50),2);
         putText(frame, "FPS : " + to_string(fps), Point(100,50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50), 2);
  
+        writer.write(frame);
         imshow("Tracking", frame);
          
         if(waitKey(1) == 27) {
             break;
         }
     }
+    video.release();
+    destroyAllWindows();
+    
     return 0;
 }

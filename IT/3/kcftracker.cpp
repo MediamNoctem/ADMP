@@ -95,7 +95,6 @@ KCFTracker::KCFTracker(bool hog, bool fixed_window, bool multiscale, bool lab)
     // Parameters equal in all cases
     lambda = 0.0001; // регуляризация
     padding = 2.5; // область, окружающая цель, относительно ее размера
-    //output_sigma_factor = 0.1;
     output_sigma_factor = 0.125; // пропускная способность цели по Гауссу
 
 
@@ -103,16 +102,12 @@ KCFTracker::KCFTracker(bool hog, bool fixed_window, bool multiscale, bool lab)
         // VOT
         interp_factor = 0.012; // коэффициент линейной интерполяции для адаптации
         sigma = 0.6; // пропускная способность ядра Гаусса
-        // TPAMI
-        //interp_factor = 0.02;
-        //sigma = 0.5; 
         cell_size = 4; // размер ячейки HOG
         _hogfeatures = true;
 
         if (lab) {
             interp_factor = 0.005;
-            sigma = 0.4; 
-            //output_sigma_factor = 0.025;
+            sigma = 0.4;
             output_sigma_factor = 0.1;
 
             _labfeatures = true;
@@ -138,17 +133,14 @@ KCFTracker::KCFTracker(bool hog, bool fixed_window, bool multiscale, bool lab)
 
     if (multiscale) { // multiscale
         template_size = 96; // размер шаблона в пикселях, 0 для использования размера ROI
-        //template_size = 100;
         scale_step = 1.05; // шаг масштабирования для многомасштабной оценки, 1, чтобы отключить его
         scale_weight = 0.95; // для уменьшения значений обнаружения других шкал для дополнительной стабильности
         if (!fixed_window) {
-            //printf("Multiscale does not support non-fixed window.\n");
             fixed_window = true;
         }
     }
     else if (fixed_window) {  // fit correction without multiscale
         template_size = 96;
-        //template_size = 100;
         scale_step = 1;
     }
     else {
@@ -158,8 +150,6 @@ KCFTracker::KCFTracker(bool hog, bool fixed_window, bool multiscale, bool lab)
 }
 
 // Initialize tracker 
-// roi - интересующая область поиска
-// image - начальный кадр
 void KCFTracker::init(const cv::Rect &roi, cv::Mat image)
 {
     _roi = roi;
@@ -167,13 +157,9 @@ void KCFTracker::init(const cv::Rect &roi, cv::Mat image)
     _tmpl = getFeatures(image, 1);
     _prob = createGaussianPeak(size_patch[0], size_patch[1]);
     _alphaf = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
-    //_num = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
-    //_den = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
     train(_tmpl, 1.0); // train with initial frame
  }
 // Update position based on the new frame
-// image - текущий кадр
-// Возвращает cv::Rect с целевыми позициями для текущего кадра
 cv::Rect KCFTracker::update(cv::Mat image)
 {
     if (_roi.x + _roi.width <= 0) _roi.x = -_roi.width + 1;
@@ -355,17 +341,6 @@ cv::Mat KCFTracker::getFeatures(const cv::Mat & image, bool inithann, float scal
             _tmpl_sz.width = padded_w;
             _tmpl_sz.height = padded_h;
             _scale = 1;
-            // original code from paper:
-            /*if (sqrt(padded_w * padded_h) >= 100) {   //Normal size
-                _tmpl_sz.width = padded_w;
-                _tmpl_sz.height = padded_h;
-                _scale = 1;
-            }
-            else {   //ROI is too big, track at half size
-                _tmpl_sz.width = padded_w / 2;
-                _tmpl_sz.height = padded_h / 2;
-                _scale = 2;
-            }*/
         }
 
         if (_hogfeatures) {
@@ -443,8 +418,7 @@ cv::Mat KCFTracker::getFeatures(const cv::Mat & image, bool inithann, float scal
                                 }
                             }
                             // Store result at output
-                            outputLab.at<float>(minIdx, cntCell) += 1.0 / cell_sizeQ; 
-                            //((float*) outputLab.data)[minIdx * (size_patch[0]*size_patch[1]) + cntCell] += 1.0 / cell_sizeQ; 
+                            outputLab.at<float>(minIdx, cntCell) += 1.0 / cell_sizeQ;
                         }
                     }
                     cntCell++;
