@@ -165,6 +165,24 @@ def non_maximum_suppression(grad_lenght, grad_angle, img):
     return img
 
 
+    def double_filtration(max_grad_lenght, grad_lenght, img):
+    low_level = max_grad_lenght // 15
+    high_level = max_grad_lenght // 10
+
+    for i in range(3, len(grad_lenght) - 3):
+        for j in range(3, len(grad_lenght[i]) - 3):
+            if img[i][j] == 255:
+                if grad_lenght[i][j] < low_level:
+                    img[i][j] = 0
+                elif grad_lenght[i][j] < high_level:
+                    img[i][j] = 0
+                    for h in range(0, 8):
+                        for g in range(0, 8):
+                            if h != 4 and g != 4 and img[i - 4 + h][j - 4 + g] == 255:
+                                img[i][j] == 255
+    return img
+
+
 def method_Canny(path):
     img = cv2.imread(path, 0)
     img_blur = cv2.blur(img, (5, 5))
@@ -200,7 +218,9 @@ def method_Canny(path):
             grad_lenght[i][j] = grad_lenght_temp
             grad_angle[i][j] = fi
             max_grad_lenght = max(max_grad_lenght, grad_lenght_temp)
+            
     img = non_maximum_suppression(grad_lenght, grad_angle, img)
+    img = double_filtration(max_grad_lenght, grad_lenght, img)
 
     # print("Матрица значений длин градиентов всех пикселей:")
     # for i in range(len(grad_lenght)):
