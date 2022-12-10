@@ -116,6 +116,55 @@ def gaussian_blur(size_conv_matrix, sigma, a, b, path):
     cv2.destroyAllWindows()
 
 
+def round_angle(sum_gx, sum_gy):
+    tangens = math.tan(sum_gy / sum_gx)
+    fi = -1
+    if (sum_gx > 0 and sum_gy < 0 and tangens < -2.414) or (sum_gx < 0 and sum_gy < 0 and tangens > 2.414):
+        fi = 0
+    elif (sum_gx > 0 and sum_gy < 0 and tangens < -0.414):
+        fi = 1
+    elif (sum_gx > 0 and sum_gy < 0 and tangens > -0.414) or (sum_gx > 0 and sum_gy > 0 and tangens < 0.414):
+        fi = 2
+    elif (sum_gx > 0 and sum_gy > 0 and tangens < 2.414):
+        fi = 3
+    elif (sum_gx > 0 and sum_gy > 0 and tangens > 2.414) or (sum_gx < 0 and sum_gy > 0 and tangens < -2.414):
+        fi = 4
+    elif (sum_gx < 0 and sum_gy > 0 and tangens < -0.414):
+        fi = 5
+    elif (sum_gx < 0 and sum_gy > 0 and tangens > -0.414) or (sum_gx < 0 and sum_gy < 0 and tangens < 0.414):
+        fi = 6
+    elif (sum_gx < 0 and sum_gy < 0 and tangens < 2.414):
+        fi = 7
+    return fi
+
+
+def non_maximum_suppression(grad_lenght, grad_angle, img):
+    for i in range(3, len(grad_lenght) - 3):
+        for j in range(3, len(grad_lenght[i]) - 3):
+            img[i][j] = 0
+            if grad_angle[i][j] == 6 or grad_angle[i][j] == 2:
+                if grad_lenght[i][j] > grad_lenght[i][j - 1] and grad_lenght[i][j] > grad_lenght[i][j + 1]:
+                    img[i][j] = 255
+                else:
+                    img[i][j] = 0
+            elif grad_angle[i][j] == 4 or grad_angle[i][j] == 0:
+                if grad_lenght[i][j] > grad_lenght[i - 1][j] and grad_lenght[i][j] > grad_lenght[i + 1][j]:
+                    img[i][j] = 255
+                else:
+                    img[i][j] = 0
+            elif grad_angle[i][j] == 5 or grad_angle[i][j] == 1:
+                if grad_lenght[i][j] > grad_lenght[i + 1][j - 1] and grad_lenght[i][j] > grad_lenght[i - 1][j + 1]:
+                    img[i][j] = 255
+                else:
+                    img[i][j] = 0
+            elif grad_angle[i][j] == 7 or grad_angle[i][j] == 2:
+                if grad_lenght[i][j] > grad_lenght[i - 1][j - 1] and grad_lenght[i][j] > grad_lenght[i + 1][j + 1]:
+                    img[i][j] = 255
+                else:
+                    img[i][j] = 0
+    return img
+
+
 def method_Canny(path):
     img = cv2.imread(path, 0)
     img_blur = cv2.blur(img, (5, 5))
