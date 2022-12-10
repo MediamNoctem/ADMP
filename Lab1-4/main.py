@@ -236,6 +236,40 @@ def method_Canny(path):
     cv2.destroyAllWindows()
 
 
+def record_video_moving_object(path):
+    video = cv2.VideoCapture(path, cv2.CAP_ANY)
+    ok, img = video.read()
+    w = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = 60
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    video_writer = cv2.VideoWriter('output_actions.mov', fourcc, fps, (w, h))
+
+    cur_frame = None
+    old_frame = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    while True:
+        ok, img = video.read()
+        if not ok:
+            break
+        cur_frame = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        frame_diff = cv2.absdiff(cur_frame, old_frame)
+        ret, thresh = cv2.threshold(frame_diff, 50, 255, cv2.THRESH_BINARY)
+        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        for i in contours:
+            if cv2.contourArea(i) > 1000:
+                cv2.imshow('img', img)
+                video_writer.write(img)
+                break
+
+        old_frame = cur_frame
+        if cv2.waitKey(1) & 0xFF == 27:
+            break
+    video.release()
+
+
 if __name__ == '__main__':
     # lab1
 
@@ -271,4 +305,8 @@ if __name__ == '__main__':
     # cv2.destroyAllWindows()
     """
     # lab3
-    method_Canny("husky.jpg")
+    """method_Canny("husky.jpg")
+    """
+
+    # lab4
+    record_video_moving_object("output_all.mov")
