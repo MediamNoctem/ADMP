@@ -1,85 +1,3 @@
-/*
-
-Tracker based on Kernelized Correlation Filter (KCF) [1] and Circulant Structure with Kernels (CSK) [2].
-CSK is implemented by using raw gray level features, since it is a single-channel filter.
-KCF is implemented by using HOG features (the default), since it extends CSK to multiple channels.
-
-[1] J. F. Henriques, R. Caseiro, P. Martins, J. Batista,
-"High-Speed Tracking with Kernelized Correlation Filters", TPAMI 2015.
-
-[2] J. F. Henriques, R. Caseiro, P. Martins, J. Batista,
-"Exploiting the Circulant Structure of Tracking-by-detection with Kernels", ECCV 2012.
-
-Authors: Joao Faro, Christian Bailer, Joao F. Henriques
-Contacts: joaopfaro@gmail.com, Christian.Bailer@dfki.de, henriques@isr.uc.pt
-Institute of Systems and Robotics - University of Coimbra / Department Augmented Vision DFKI
-
-
-Constructor parameters, all boolean:
-    hog: use HOG features (default), otherwise use raw pixels
-    fixed_window: fix window size (default), otherwise use ROI size (slower but more accurate)
-    multiscale: use multi-scale tracking (default; cannot be used with fixed_window = true)
-
-Default values are set for all properties of the tracker depending on the above choices.
-Their values can be customized further before calling init():
-    interp_factor: linear interpolation factor for adaptation
-    sigma: gaussian kernel bandwidth
-    lambda: regularization
-    cell_size: HOG cell size
-    padding: area surrounding the target, relative to its size
-    output_sigma_factor: bandwidth of gaussian target
-    template_size: template size in pixels, 0 to use ROI size
-    scale_step: scale step for multi-scale estimation, 1 to disable it
-    scale_weight: to downweight detection scores of other scales for added stability
-
-For speed, the value (template_size/cell_size) should be a power of 2 or a product of small prime numbers.
-
-Inputs to init():
-   image is the initial frame.
-   roi is a cv::Rect with the target positions in the initial frame
-
-Inputs to update():
-   image is the current frame.
-
-Outputs of update():
-   cv::Rect with target positions for the current frame
-
-
-By downloading, copying, installing or using the software you agree to this license.
-If you do not agree to this license, do not download, install,
-copy or use the software.
-
-
-                          License Agreement
-               For Open Source Computer Vision Library
-                       (3-clause BSD License)
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-  * Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-
-  * Neither the names of the copyright holders nor the names of the contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
-
-This software is provided by the copyright holders and contributors "as is" and
-any express or implied warranties, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose are disclaimed.
-In no event shall copyright holders or contributors be liable for any direct,
-indirect, incidental, special, exemplary, or consequential damages
-(including, but not limited to, procurement of substitute goods or services;
-loss of use, data, or profits; or business interruption) however caused
-and on any theory of liability, whether in contract, strict liability,
-or tort (including negligence or otherwise) arising in any way out of
-the use of this software, even if advised of the possibility of such damage.
- */
-
 #ifndef _KCFTRACKER_HEADERS
 #include "kcftracker.hpp"
 #include "ffttools.hpp"
@@ -88,11 +6,8 @@ the use of this software, even if advised of the possibility of such damage.
 #include "labdata.hpp"
 #endif
 
-// Constructor
 KCFTracker::KCFTracker(bool hog, bool fixed_window, bool multiscale, bool lab)
 {
-
-    // Parameters equal in all cases
     lambda = 0.0001; // регуляризация
     padding = 2.5; // область, окружающая цель, относительно ее размера
     output_sigma_factor = 0.125; // пропускная способность цели по Гауссу
@@ -114,7 +29,7 @@ KCFTracker::KCFTracker(bool hog, bool fixed_window, bool multiscale, bool lab)
             _labCentroids = cv::Mat(nClusters, 3, CV_32FC1, &data);
             cell_sizeQ = cell_size*cell_size;
         }
-        else{
+        else {
             _labfeatures = false;
         }
     }
@@ -139,17 +54,17 @@ KCFTracker::KCFTracker(bool hog, bool fixed_window, bool multiscale, bool lab)
             fixed_window = true;
         }
     }
-    else if (fixed_window) {  // fit correction without multiscale
-        template_size = 96;
-        scale_step = 1;
-    }
-    else {
-        template_size = 1;
-        scale_step = 1;
-    }
+    else 
+        if (fixed_window) {  // fit correction without multiscale
+            template_size = 96;
+            scale_step = 1;
+        }
+        else {
+            template_size = 1;
+            scale_step = 1;
+        }
 }
 
-// Initialize tracker 
 void KCFTracker::init(const cv::Rect &roi, cv::Mat image)
 {
     _roi = roi;
@@ -157,9 +72,9 @@ void KCFTracker::init(const cv::Rect &roi, cv::Mat image)
     _tmpl = getFeatures(image, 1);
     _prob = createGaussianPeak(size_patch[0], size_patch[1]);
     _alphaf = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
-    train(_tmpl, 1.0); // train with initial frame
+    train(_tmpl, 1.0); // Тренировать на начальном фрейме.
  }
-// Update position based on the new frame
+
 cv::Rect KCFTracker::update(cv::Mat image)
 {
     if (_roi.x + _roi.width <= 0) _roi.x = -_roi.width + 1;
@@ -175,7 +90,7 @@ cv::Rect KCFTracker::update(cv::Mat image)
     cv::Point2f res = detect(_tmpl, getFeatures(image, 0, 1.0f), peak_value);
 
     if (scale_step != 1) {
-        // Test at a smaller _scale
+        // Тест при меньшем _scale
         float new_peak_value;
         cv::Point2f new_res = detect(_tmpl, getFeatures(image, 0, 1.0f / scale_step), new_peak_value);
 
@@ -187,7 +102,7 @@ cv::Rect KCFTracker::update(cv::Mat image)
             _roi.height /= scale_step;
         }
 
-        // Test at a bigger _scale
+        // Тест при большем _scale
         new_res = detect(_tmpl, getFeatures(image, 0, scale_step), new_peak_value);
 
         if (scale_weight * new_peak_value > peak_value) {
@@ -199,7 +114,7 @@ cv::Rect KCFTracker::update(cv::Mat image)
         }
     }
 
-    // Adjust by cell size and _scale
+    // Настройка по cell_size и _scale
     _roi.x = cx - _roi.width / 2.0f + ((float) res.x * cell_size * _scale);
     _roi.y = cy - _roi.height / 2.0f + ((float) res.y * cell_size * _scale);
 
@@ -215,8 +130,6 @@ cv::Rect KCFTracker::update(cv::Mat image)
     return _roi;
 }
 
-
-// Detect object in the current frame.
 cv::Point2f KCFTracker::detect(cv::Mat z, cv::Mat x, float &peak_value)
 {
     using namespace FFTTools;
@@ -224,13 +137,13 @@ cv::Point2f KCFTracker::detect(cv::Mat z, cv::Mat x, float &peak_value)
     cv::Mat k = gaussianCorrelation(x, z);
     cv::Mat res = (real(fftd(complexMultiplication(_alphaf, fftd(k)), true)));
 
-    //minMaxLoc only accepts doubles for the peak, and integer points for the coordinates
+    // minMaxLoc принимает только двойные значения для пика и целочисленные точки для координат.
     cv::Point2i pi;
     double pv;
     cv::minMaxLoc(res, NULL, &pv, NULL, &pi);
     peak_value = (float) pv;
 
-    //subpixel peak estimation, coordinates will be non-integer
+    // Оценка субпиксельного пика, координаты будут нецелыми.
     cv::Point2f p((float)pi.x, (float)pi.y);
 
     if (pi.x > 0 && pi.x < res.cols-1) {
@@ -247,11 +160,9 @@ cv::Point2f KCFTracker::detect(cv::Mat z, cv::Mat x, float &peak_value)
     return p;
 }
 
-// train tracker with a single image
 void KCFTracker::train(cv::Mat x, float train_interp_factor)
 {
     using namespace FFTTools;
-
     cv::Mat k = gaussianCorrelation(x, x);
     cv::Mat alphaf = complexDivision(_prob, (fftd(k) + lambda));
     
@@ -259,7 +170,6 @@ void KCFTracker::train(cv::Mat x, float train_interp_factor)
     _alphaf = (1 - train_interp_factor) * _alphaf + (train_interp_factor) * alphaf;
 }
 
-// Evaluates a Gaussian kernel with bandwidth SIGMA for all relative shifts between input images X and Y, which must both be MxN. They must    also be periodic (ie., pre-processed with a cosine window).
 cv::Mat KCFTracker::gaussianCorrelation(cv::Mat x1, cv::Mat x2)
 {
     using namespace FFTTools;
@@ -270,7 +180,7 @@ cv::Mat KCFTracker::gaussianCorrelation(cv::Mat x1, cv::Mat x2)
         cv::Mat x1aux;
         cv::Mat x2aux;
         for (int i = 0; i < size_patch[2]; i++) {
-            x1aux = x1.row(i);   // Procedure do deal with cv::Mat multichannel bug
+            x1aux = x1.row(i);   // Процедура устранения многоканальной ошибки cv::Mat
             x1aux = x1aux.reshape(1, size_patch[0]);
             x2aux = x2.row(i).reshape(1, size_patch[0]);
             cv::mulSpectrums(fftd(x1aux), fftd(x2aux), caux, 0, true); 
@@ -295,7 +205,6 @@ cv::Mat KCFTracker::gaussianCorrelation(cv::Mat x1, cv::Mat x2)
     return k;
 }
 
-// Create Gaussian Peak. Function called only in the first frame.
 cv::Mat KCFTracker::createGaussianPeak(int sizey, int sizex)
 {
     cv::Mat_<float> res(sizey, sizex);
@@ -317,6 +226,7 @@ cv::Mat KCFTracker::createGaussianPeak(int sizey, int sizex)
 }
 
 // Obtain sub-window from image, with replication-padding and extract features
+// Получение карты объектов для выбранного подизображения.
 cv::Mat KCFTracker::getFeatures(const cv::Mat & image, bool inithann, float scale_adjust)
 {
     cv::Rect extracted_roi;
@@ -328,8 +238,8 @@ cv::Mat KCFTracker::getFeatures(const cv::Mat & image, bool inithann, float scal
         int padded_w = _roi.width * padding;
         int padded_h = _roi.height * padding;
         
-        if (template_size > 1) {  // Fit largest dimension to the given template size
-            if (padded_w >= padded_h)  //fit to width
+        if (template_size > 1) {  // Подгонка наибольшего размера к заданному размеру шаблона.
+            if (padded_w >= padded_h)  // Подгонка по ширине.
                 _scale = padded_w / (float) template_size;
             else
                 _scale = padded_h / (float) template_size;
@@ -337,18 +247,18 @@ cv::Mat KCFTracker::getFeatures(const cv::Mat & image, bool inithann, float scal
             _tmpl_sz.width = padded_w / _scale;
             _tmpl_sz.height = padded_h / _scale;
         }
-        else {  //No template size given, use ROI size
+        else {  // Размер шаблона не указан, используйте размер ROI.
             _tmpl_sz.width = padded_w;
             _tmpl_sz.height = padded_h;
             _scale = 1;
         }
 
         if (_hogfeatures) {
-            // Round to cell size and also make it even
+            // Округлить до размера ячейки, а также сделайть ее чётной.
             _tmpl_sz.width = ( ( (int)(_tmpl_sz.width / (2 * cell_size)) ) * 2 * cell_size ) + cell_size*2;
             _tmpl_sz.height = ( ( (int)(_tmpl_sz.height / (2 * cell_size)) ) * 2 * cell_size ) + cell_size*2;
         }
-        else {  //Make number of pixels even (helps with some logic involving half-dimensions)
+        else {  // Сделать количество пикселей четным (помогает с некоторой логикой, связанной с полуразмерностями).
             _tmpl_sz.width = (_tmpl_sz.width / 2) * 2;
             _tmpl_sz.height = (_tmpl_sz.height / 2) * 2;
         }
@@ -357,7 +267,7 @@ cv::Mat KCFTracker::getFeatures(const cv::Mat & image, bool inithann, float scal
     extracted_roi.width = scale_adjust * _scale * _tmpl_sz.width;
     extracted_roi.height = scale_adjust * _scale * _tmpl_sz.height;
 
-    // center roi with new size
+    // Центр ROI с новым размером.
     extracted_roi.x = cx - extracted_roi.width / 2;
     extracted_roi.y = cy - extracted_roi.height / 2;
 
@@ -389,22 +299,22 @@ cv::Mat KCFTracker::getFeatures(const cv::Mat & image, bool inithann, float scal
             cvtColor(z, imgLab, CV_BGR2Lab);
             unsigned char *input = (unsigned char*)(imgLab.data);
 
-            // Sparse output vector
+            // Разреженный выходной вектор.
             cv::Mat outputLab = cv::Mat(_labCentroids.rows, size_patch[0]*size_patch[1], CV_32F, float(0));
 
             int cntCell = 0;
-            // Iterate through each cell
+            // Выполнить итерацию по каждой ячейке.
             for (int cY = cell_size; cY < z.rows-cell_size; cY+=cell_size){
                 for (int cX = cell_size; cX < z.cols-cell_size; cX+=cell_size){
-                    // Iterate through each pixel of cell (cX,cY)
+                    // Выполнить итерацию по каждому пикселю ячейки (cX,cY).
                     for(int y = cY; y < cY+cell_size; ++y){
                         for(int x = cX; x < cX+cell_size; ++x){
-                            // Lab components for each pixel
+                            // Lab компоненты для каждого пикселя.
                             float l = (float)input[(z.cols * y + x) * 3];
                             float a = (float)input[(z.cols * y + x) * 3 + 1];
                             float b = (float)input[(z.cols * y + x) * 3 + 2];
 
-                            // Iterate trough each centroid
+                            // Выполнить итерацию по каждому центроиду.
                             float minDist = FLT_MAX;
                             int minIdx = 0;
                             float *inputCentroid = (float*)(_labCentroids.data);
@@ -417,14 +327,14 @@ cv::Mat KCFTracker::getFeatures(const cv::Mat & image, bool inithann, float scal
                                     minIdx = k;
                                 }
                             }
-                            // Store result at output
+                            // Сохранить результат на выходе.
                             outputLab.at<float>(minIdx, cntCell) += 1.0 / cell_sizeQ;
                         }
                     }
                     cntCell++;
                 }
             }
-            // Update size_patch[2] and add features to FeaturesMap
+            // Обновить size_patch[2] и добавьте объекты на карту объектов FeaturesMap.
             size_patch[2] += _labCentroids.rows;
             FeaturesMap.push_back(outputLab);
         }
@@ -443,8 +353,7 @@ cv::Mat KCFTracker::getFeatures(const cv::Mat & image, bool inithann, float scal
     FeaturesMap = hann.mul(FeaturesMap);
     return FeaturesMap;
 }
-    
-// Initialize Hanning window. Function called only in the first frame.
+
 void KCFTracker::createHanningMats()
 {   
     cv::Mat hann1t = cv::Mat(cv::Size(size_patch[1],1), CV_32F, cv::Scalar(0));
@@ -473,7 +382,6 @@ void KCFTracker::createHanningMats()
     }
 }
 
-// Calculate sub-pixel peak for one dimension
 float KCFTracker::subPixelPeak(float left, float center, float right)
 {   
     float divisor = 2 * center - right - left;
