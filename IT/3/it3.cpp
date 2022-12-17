@@ -16,14 +16,28 @@ int main(int argc, char **argv)
 
 	KCFTracker tracker(HOG, FIXEDWINDOW, MULTISCALE, LAB);
 
-	VideoCapture video("video2_2.mp4");
+	VideoCapture video("video.mp4");
+
+    Mat frame;
+
+    video >> frame;
+
+    VideoWriter writer;
+    int codec = VideoWriter::fourcc('M', 'P', '4', 'V');
+    double fps = 60.0;
+    string filename = "./object_tracking.mp4";
+    writer.open(filename, codec, fps, frame.size());
+
+    if (!writer.isOpened()) {
+        cout << "Could not open the output video file for write\n";
+        return -1;
+    }
 
     if(!video.isOpened()) {
         cout << "Could not read video file" << endl;
         return -1;
     }
-
-    Mat frame; 
+ 
     bool ok = video.read(frame); 
     Rect trackingBox = selectROI(frame, false); 
     rectangle(frame, trackingBox, Scalar( 0, 255, 0 ), 2, 1 ); 
@@ -52,7 +66,8 @@ int main(int argc, char **argv)
          
         putText(frame, "KCF Tracker (our)", Point(100,20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50),2);
         putText(frame, "FPS : " + to_string(fps), Point(100,50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50,170,50), 2);
- 
+
+        writer.write(frame);
         imshow("Tracking", frame);
          
         if(waitKey(1) == 27) {

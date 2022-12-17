@@ -12,7 +12,7 @@ int main(int argc, char **argv)
     // List of tracker types in OpenCV 3.4.1
     // "GOTURN"
     string trackerTypes[7] = {"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "MOSSE", "CSRT"};
-    string trackerType = trackerTypes[2];
+    string trackerType = trackerTypes[6];
     Ptr<Tracker> tracker;
  
     if (trackerType == "BOOSTING")
@@ -32,31 +32,31 @@ int main(int argc, char **argv)
     /*if (trackerType == "GOTURN")
         tracker = TrackerGOTURN::create();*/
     
-    VideoCapture video("video2_2.mp4");
-    VideoWriter writer;
-    int codec = VideoWriter::fourcc('M', 'J', 'P', 'G');
-    double fps = 120.0;
-    string filename = "./video2_2.avi";
-     
-    if(!video.isOpened())
-    {
-        cout << "Could not read video file" << endl; 
-        return 1; 
-    } 
+    VideoCapture video("video.mp4");
  
-    Mat frame; 
-    Mat frame2;
+    Mat frame;
 
-    bool ok = video.read(frame); 
-    Rect trackingBox = selectROI(frame, false); 
-    rectangle(frame, trackingBox, Scalar( 0, 255, 0 ), 2, 1 ); 
+    video >> frame;
 
+    VideoWriter writer;
+    int codec = VideoWriter::fourcc('M', 'P', '4', 'V');
+    double fps = 60.0;
+    string filename = "./object_tracking.mp4";
     writer.open(filename, codec, fps, frame.size());
 
     if (!writer.isOpened()) {
         cout << "Could not open the output video file for write\n";
         return -1;
     }
+
+    if(!video.isOpened()) {
+        cout << "Could not read video file" << endl;
+        return -1;
+    }
+
+    bool ok = video.read(frame); 
+    Rect trackingBox = selectROI(frame, false); 
+    rectangle(frame, trackingBox, Scalar( 0, 255, 0 ), 2, 1 ); 
  
     imshow("Tracking", frame); 
     tracker->init(frame, trackingBox);
